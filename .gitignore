@@ -16,11 +16,12 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
+share/python-wheels/    
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
+*.pyc
 
 # Virtual environments
 .env
@@ -79,10 +80,17 @@ dmypy.json
 *.csv
 *.xlsx
 *.xls
-data/
 *.parquet
 *.h5
 *.hdf5
+
+# To:
+data/*.csv
+data/*.xlsx
+data/*.xls
+data/*.json
+# But allow Python code:
+!data/*.py
 
 # Plots and results
 plots/
