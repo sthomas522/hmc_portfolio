@@ -150,3 +150,7 @@ secrets.json
 .secrets
 credentials.json
 api_keys.txt
+
+# Frontend build artifacts (if you add a build process later)
+frontend/dist/
+frontend/node_modules/

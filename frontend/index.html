@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Portfolio Risk Analysis</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .analysis-type-selector {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+        
+        .analysis-type-btn {
+            padding: 12px 24px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .analysis-type-btn.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .analysis-type-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .analysis-type-btn.active:hover {
+            background: white;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-content {
+            padding: 24px;
+        }
+        
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 16px;
+            align-items: end;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .input-group label {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .input-field {
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: fit-content;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .risk-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .risk-metric-card {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #dc2626;
+        }
+        
+        .risk-metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #dc2626;
+            margin-bottom: 4px;
+        }
+        
+        .risk-metric-label {
+            font-size: 0.8rem;
+            color: #991b1b;
+            font-weight: 500;
+        }
+        
+        .stress-test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .stress-scenario {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .scenario-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+        
+        .scenario-loss {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #dc2626;
+            margin-bottom: 4px;
+        }
+        
+        .scenario-description {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+        
+        .interpretation-section {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+        }
+        
+        .interpretation-section h3 {
+            color: #1e40af;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        
+        .interpretation-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .interpretation-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            line-height: 1.6;
+            color: #1e40af;
+        }
+        
+        .interpretation-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .advisor-points {
+            background: linear-gradient(135deg, #fef7cd 0%, #fef3c7 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .advisor-points h3 {
+            color: #92400e;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+        }
+        
+        .advisor-points ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .advisor-points li {
+            padding: 8px 0;
+            color: #78350f;
+            font-weight: 500;
+        }
+        
+        .advisor-points li::before {
+            content: "💡 ";
+            margin-right: 8px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            border-bottom-color: #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        
+        .tab:hover {
+            background: #f8fafc;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            color: #dc2626;
+            margin: 16px 0;
+        }
+        
+        .analysis-summary {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #0ea5e9;
+        }
+        
+        .summary-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 12px;
+        }
+        
+        .summary-content {
+            color: #075985;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .input-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid, .risk-metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .analysis-type-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_BASE = 'http://localhost:8000';
+
+        function EnhancedPortfolioAnalyzer() {
+            const [analysisType, setAnalysisType] = useState('comprehensive');
+            const [activeTab, setActiveTab] = useState('tickers');
+            const [tickers, setTickers] = useState('AAPL,MSFT,GOOGL,AMZN,NVDA');
+            const [includeTailRisk, setIncludeTailRisk] = useState(true);
+            const [loading, setLoading] = useState(false);
+            const [results, setResults] = useState(null);
+            const [error, setError] = useState(null);
+            const [file, setFile] = useState(null);
+
+            const analyzePortfolio = async (endpoint, payload) => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const response = await fetch(`${API_BASE}${endpoint}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    setResults(data);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const analyzeTickers = async () => {
+                const tickerList = tickers.split(',').map(t => t.trim()).filter(t => t);
+                
+                if (analysisType === 'comprehensive') {
+                    await analyzePortfolio('/analyze/comprehensive', {
+                        tickers: tickerList,
+                        period: '1y',
+                        include_tail_risk: includeTailRisk
+                    });
+                } else if (analysisType === 'correlation') {
+                    await analyzePortfolio('/analyze/tickers', {
+                        tickers: tickerList,
+                        period: '1y'
+                    });
+                } else {
+                    await analyzePortfolio('/analyze/tail-risk-only', {
+                        tickers: tickerList,
+                        period: '1y'
+                    });
+                }
+            };
+
+            const analyzeSample = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    let endpoint = '/analyze/sample';
+                    if (analysisType === 'comprehensive') {
+                        endpoint = '/analyze/sample/comprehensive';
+                    } else if (analysisType === 'tail-risk') {
+                        endpoint = '/analyze/sample/tail-risk';
+                    }
+                    
+                    const response = await fetch(`${API_BASE}${endpoint}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    setResults(data);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const renderCorrelationResults = (correlationData) => {
+                if (!correlationData || !correlationData.analysis_successful) {
+                    return (
+                        <div className="error">
+                            Correlation analysis failed: {correlationData?.error || 'Unknown error'}
+                        </div>
+                    );
+                }
+
+                return (
+                    <div>
+                        <div className="card">
+                            <div className="card-header">
+                                Correlation Structure Metrics
+                            </div>
+                            <div className="card-content">
+                                <div className="metrics-grid">
+                                    <div className="metric-card">
+                                        <div className="metric-value">{correlationData.effective_rank?.toFixed(1) || 'N/A'}</div>
+                                        <div className="metric-label">Effective Rank</div>
+                                    </div>
+                                    <div className="metric-card">
+                                        <div className="metric-value">{(correlationData.diversification_loss * 100)?.toFixed(0) || 'N/A'}%</div>
+                                        <div className="metric-label">Diversification Loss</div>
+                                    </div>
+                                    <div className="metric-card">
+                                        <div className="metric-value">{correlationData.num_assets || 'N/A'}</div>
+                                        <div className="metric-label">Total Assets</div>
+                                    </div>
+                                    {correlationData.mp_fitting_successful && (
+                                        <>
+                                            <div className="metric-card">
+                                                <div className="metric-value">{(correlationData.noise_fraction * 100)?.toFixed(0) || 'N/A'}%</div>
+                                                <div className="metric-label">Random Noise</div>
+                                            </div>
+                                            <div className="metric-card">
+                                                <div className="metric-value">{correlationData.num_signal_factors || 'N/A'}</div>
+                                                <div className="metric-label">Signal Factors</div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderTailRiskResults = (tailRiskData) => {
+                if (!tailRiskData || !tailRiskData.analysis_successful) {
+                    return (
+                        <div className="error">
+                            Tail risk analysis failed: {tailRiskData?.error || 'Unknown error'}
+                        </div>
+                    );
+                }
+
+                const var95 = tailRiskData.var_cvar_analysis?.['95.0%']?.historical_var_daily;
+                const var99 = tailRiskData.var_cvar_analysis?.['99.0%']?.historical_var_daily;
+                const cvar99 = tailRiskData.var_cvar_analysis?.['99.0%']?.historical_cvar_daily;
+                const maxDrawdown = tailRiskData.drawdown_analysis?.maximum_drawdown;
+
+                return (
+                    <div>
+                        <div className="card">
+                            <div className="card-header">
+                                Tail Risk Metrics
+                            </div>
+                            <div className="card-content">
+                                <div className="risk-metrics-grid">
+                                    <div className="risk-metric-card">
+                                        <div className="risk-metric-value">{Math.abs(var95 * 100).toFixed(2)}%</div>
+                                        <div className="risk-metric-label">95% Daily VaR</div>
+                                    </div>
+                                    <div className="risk-metric-card">
+                                        <div className="risk-metric-value">{Math.abs(var99 * 100).toFixed(2)}%</div>
+                                        <div className="risk-metric-label">99% Daily VaR</div>
+                                    </div>
+                                    <div className="risk-metric-card">
+                                        <div className="risk-metric-value">{Math.abs(cvar99 * 100).toFixed(2)}%</div>
+                                        <div className="risk-metric-label">99% CVaR</div>
+                                    </div>
+                                    <div className="risk-metric-card">
+                                        <div className="risk-metric-value">{Math.abs(maxDrawdown * 100).toFixed(1)}%</div>
+                                        <div className="risk-metric-label">Max Drawdown</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {tailRiskData.stress_testing && (
+                            <div className="card">
+                                <div className="card-header">
+                                    Stress Test Results
+                                </div>
+                                <div className="card-content">
+                                    <div className="stress-test-grid">
+                                        {Object.entries(tailRiskData.stress_testing).map(([key, scenario]) => (
+                                            <div key={key} className="stress-scenario">
+                                                <div className="scenario-name">{scenario.scenario_name}</div>
+                                                <div className="scenario-loss">{Math.abs(scenario.estimated_portfolio_return * 100).toFixed(1)}% Loss</div>
+                                                <div className="scenario-description">{scenario.description}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderComprehensiveResults = () => {
+                if (!results) return null;
+
+                const correlationData = results.correlation_analysis;
+                const tailRiskData = results.tail_risk_analysis;
+
+                return (
+                    <div>
+                        {results.enhanced_interpretation && (
+                            <div className="analysis-summary">
+                                <div className="summary-title">Comprehensive Risk Assessment</div>
+                                <div className="summary-content">
+                                    {results.enhanced_interpretation.slice(0, 3).map((item, index) => (
+                                        <div key={index} style={{marginBottom: '8px'}}>{item}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {correlationData && renderCorrelationResults(correlationData)}
+                        {tailRiskData && renderTailRiskResults(tailRiskData)}
+
+                        {results.enhanced_interpretation && (
+                            <div className="card">
+                                <div className="card-header">Enhanced Analysis</div>
+                                <div className="card-content">
+                                    <div className="interpretation-section">
+                                        <h3>Integrated Risk Insights</h3>
+                                        <ul className="interpretation-list">
+                                            {results.enhanced_interpretation.map((item, index) => (
+                                                <li key={index}>{item}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {results.enhanced_advisor_points && (
+                            <div className="card">
+                                <div className="card-content">
+                                    <div className="advisor-points">
+                                        <h3>Enhanced Advisor Talking Points</h3>
+                                        <ul>
+                                            {results.enhanced_advisor_points.map((point, index) => (
+                                                <li key={index}>{point}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {results.integrated_insights && results.integrated_insights.length > 0 && (
+                            <div className="card">
+                                <div className="card-header">Integrated Insights</div>
+                                <div className="card-content">
+                                    <ul className="interpretation-list">
+                                        {results.integrated_insights.map((insight, index) => (
+                                            <li key={index}>{insight}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderResults = () => {
+                if (!results) return null;
+
+                if (analysisType === 'comprehensive') {
+                    return renderComprehensiveResults();
+                } else if (analysisType === 'correlation') {
+                    return renderCorrelationResults(results);
+                } else {
+                    return renderTailRiskResults(results);
+                }
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>Enhanced Portfolio Risk Analysis</h1>
+                        <p>Comprehensive correlation structure and tail risk assessment using advanced mathematical techniques</p>
+                    </div>
+
+                    <div className="analysis-type-selector">
+                        <button 
+                            className={`analysis-type-btn ${analysisType === 'comprehensive' ? 'active' : ''}`}
+                            onClick={() => setAnalysisType('comprehensive')}
+                        >
+                            Comprehensive Analysis
+                        </button>
+                        <button 
+                            className={`analysis-type-btn ${analysisType === 'correlation' ? 'active' : ''}`}
+                            onClick={() => setAnalysisType('correlation')}
+                        >
+                            Correlation Only
+                        </button>
+                        <button 
+                            className={`analysis-type-btn ${analysisType === 'tail-risk' ? 'active' : ''}`}
+                            onClick={() => setAnalysisType('tail-risk')}
+                        >
+                            Tail Risk Only
+                        </button>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">
+                            Analysis Input
+                            {analysisType === 'comprehensive' && (
+                                <span style={{fontSize: '0.9rem', opacity: '0.8'}}>
+                                    Correlation + Tail Risk
+                                </span>
+                            )}
+                        </div>
+                        <div className="card-content">
+                            <div className="tabs">
+                                <div 
+                                    className={`tab ${activeTab === 'tickers' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('tickers')}
+                                >
+                                    Ticker List
+                                </div>
+                                <div 
+                                    className={`tab ${activeTab === 'sample' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('sample')}
+                                >
+                                    Sample Portfolio
+                                </div>
+                            </div>
+
+                            {activeTab === 'tickers' && (
+                                <div>
+                                    <div className="input-section">
+                                        <div className="input-group">
+                                            <label htmlFor="tickers">Stock Tickers (comma-separated)</label>
+                                            <input
+                                                id="tickers"
+                                                type="text"
+                                                className="input-field"
+                                                value={tickers}
+                                                onChange={(e) => setTickers(e.target.value)}
+                                                placeholder="AAPL,MSFT,GOOGL,AMZN,NVDA"
+                                            />
+                                        </div>
+                                        <button 
+                                            className="btn btn-primary" 
+                                            onClick={analyzeTickers}
+                                            disabled={loading}
+                                        >
+                                            Analyze Portfolio
+                                        </button>
+                                    </div>
+                                    
+                                    {analysisType === 'comprehensive' && (
+                                        <div className="checkbox-group">
+                                            <input
+                                                type="checkbox"
+                                                id="includeTailRisk"
+                                                checked={includeTailRisk}
+                                                onChange={(e) => setIncludeTailRisk(e.target.checked)}
+                                            />
+                                            <label htmlFor="includeTailRisk">Include tail risk analysis (VaR, stress tests, drawdowns)</label>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'sample' && (
+                                <div>
+                                    <p style={{marginBottom: '16px', color: '#6b7280'}}>
+                                        Analyze a sample tech portfolio with {analysisType === 'comprehensive' ? 'full risk assessment' : 
+                                        analysisType === 'correlation' ? 'correlation analysis' : 'tail risk metrics'}
+                                    </p>
+                                    <button 
+                                        className="btn btn-primary" 
+                                        onClick={analyzeSample}
+                                        disabled={loading}
+                                    >
+                                        Analyze Sample Portfolio
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="error">
+                            <strong>Error:</strong> {error}
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="card">
+                            <div className="loading">
+                                <div className="spinner"></div>
+                                <span>Performing {analysisType} analysis...</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {renderResults()}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<EnhancedPortfolioAnalyzer />, document.getElementById('root'));
+    </script>
+</body>
+</html>
