@@ -61,6 +61,7 @@ class AnalysisRequest(BaseModel):
     weights: Optional[List[float]] = None
     period: str = "1y"
     max_assets: Optional[int] = None
+    include_factor_attribution: Optional[bool] = False  # Add this line
 
 # Initialize enhanced services
 app = FastAPI(
@@ -149,6 +150,14 @@ async def analyze_comprehensive_portfolio(request: EnhancedAnalysisRequest):
         raise HTTPException(status_code=500, detail=f"Comprehensive analysis failed: {str(e)}")
 
 
+# First, update your AnalysisRequest model at the top of main.py
+class AnalysisRequest(BaseModel):
+    tickers: List[str]
+    weights: Optional[List[float]] = None
+    period: str = "1y"
+    max_assets: Optional[int] = None
+    include_factor_attribution: Optional[bool] = False  # Add this line
+
 @app.post("/analyze/tickers")
 async def analyze_ticker_portfolio(request: AnalysisRequest):
     """
@@ -156,6 +165,7 @@ async def analyze_ticker_portfolio(request: AnalysisRequest):
     """
     try:
         print(f"DEBUG: Starting analysis with tickers: {request.tickers}")
+        print(f"DEBUG: Include factor attribution: {request.include_factor_attribution}")
         
         # Validate input
         if not request.tickers:
@@ -198,12 +208,18 @@ async def analyze_ticker_portfolio(request: AnalysisRequest):
         
         print("DEBUG: About to run analysis...")
         
-        # Run analysis using the original analyzer
-        from analysis.portfolio_analyzer import EnhancedPortfolioAnalyzer
-        analyzer = EnhancedPortfolioAnalyzer()
-        results = analyzer._perform_correlation_analysis(returns_df, weights_series)
-
+        # Use the unified analyzer with factor attribution support
+        from analysis.portfolio_analyzer import PortfolioCorrelationAnalyzer
+        analyzer = PortfolioCorrelationAnalyzer()
+        
+        results = analyzer.analyze_portfolio_returns(
+            returns_df, 
+            weights_series,
+            include_factor_attribution=request.include_factor_attribution
+        )
+        
         print(f"DEBUG: Analysis completed, successful: {results.get('analysis_successful', False)}")
+        print(f"DEBUG: Has factor attribution: {'factor_attribution' in results}")
         
         if not results.get('analysis_successful', False):
             raise HTTPException(status_code=500, detail=f"Analysis failed: {results.get('error', 'Unknown error')}")
@@ -483,6 +499,40 @@ async def get_enhanced_configuration():
         }
     }
 
+@app.post("/analyze/factor-attribution-test")
+async def test_factor_attribution():
+    """Test factor attribution with synthetic data"""
+    try:
+        import numpy as np
+        
+        # Create synthetic test data
+        np.random.seed(42)
+        dates = pd.date_range('2023-01-01', periods=252, freq='D')
+        
+        market_factor = np.random.normal(0, 0.015, 252)
+        tech_factor = np.random.normal(0, 0.01, 252)
+        noise = np.random.normal(0, 0.008, (252, 5))
+        
+        returns_data = pd.DataFrame({
+            'AAPL': 0.8 * market_factor + 0.6 * tech_factor + noise[:, 0],
+            'MSFT': 0.7 * market_factor + 0.7 * tech_factor + noise[:, 1], 
+            'GOOGL': 0.6 * market_factor + 0.8 * tech_factor + noise[:, 2],
+            'AMZN': 0.9 * market_factor + 0.4 * tech_factor + noise[:, 3],
+            'NVDA': 0.5 * market_factor + 0.9 * tech_factor + noise[:, 4]
+        }, index=dates)
+        
+        # Test factor attribution
+        analyzer = PortfolioCorrelationAnalyzer()
+        results = analyzer.analyze_portfolio_returns(
+            returns_data, 
+            include_factor_attribution=True
+        )
+        
+        return results
+        
+    except Exception as e:
+        return {"error": str(e), "test_successful": False}
+    
 # Health check with enhanced features
 @app.get("/health/enhanced")
 async def enhanced_health_check():

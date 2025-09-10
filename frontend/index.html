@@ -23,7 +23,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -50,10 +50,11 @@
             gap: 16px;
             margin-bottom: 24px;
             justify-content: center;
+            flex-wrap: wrap;
         }
         
         .analysis-type-btn {
-            padding: 12px 24px;
+            padding: 12px 20px;
             border: 2px solid white;
             background: transparent;
             color: white;
@@ -61,6 +62,7 @@
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
+            font-size: 14px;
         }
         
         .analysis-type-btn.active {
@@ -90,9 +92,6 @@
             padding: 20px;
             font-size: 1.2rem;
             font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
         .card-content {
@@ -135,6 +134,91 @@
             align-items: center;
             gap: 8px;
             margin-top: 16px;
+        }
+
+        .factor-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #0ea5e9;
+            margin-bottom: 16px;
+        }
+
+        .factor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .factor-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+
+        .factor-type-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .factor-type-market {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .factor-type-sector {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .factor-type-idiosyncratic {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .factor-type-mixed {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .factor-variance {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0ea5e9;
+            margin-bottom: 4px;
+        }
+
+        .factor-description {
+            color: #075985;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .factor-loadings h4 {
+            font-size: 0.9rem;
+            color: #0c4a6e;
+            margin-bottom: 8px;
+        }
+
+        .loading-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #e0f2fe;
+        }
+
+        .loading-ticker {
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+
+        .loading-value {
+            color: #075985;
+            font-family: monospace;
         }
         
         .btn {
@@ -425,6 +509,7 @@
             const [results, setResults] = useState(null);
             const [error, setError] = useState(null);
             const [file, setFile] = useState(null);
+            const [includeFactorAttribution, setIncludeFactorAttribution] = useState(false);
 
             const analyzePortfolio = async (endpoint, payload) => {
                 setLoading(true);
@@ -466,10 +551,16 @@
                         tickers: tickerList,
                         period: '1y'
                     });
-                } else {
+                } else if (analysisType === 'tail-risk') {
                     await analyzePortfolio('/analyze/tail-risk-only', {
                         tickers: tickerList,
                         period: '1y'
+                    });
+                } else if (analysisType === 'factor-attribution') {
+                    await analyzePortfolio('/analyze/tickers', {
+                        tickers: tickerList,
+                        period: '1y',
+                        include_factor_attribution: true
                     });
                 }
             };
@@ -498,6 +589,10 @@
                 } finally {
                     setLoading(false);
                 }
+            };
+
+            const handleFileChange = (e) => {
+                setFile(e.target.files[0]);
             };
 
             const renderCorrelationResults = (correlationData) => {
@@ -612,10 +707,66 @@
                 );
             };
 
+            const renderFactorAttributionResults = (factorData) => {
+    if (!factorData || !factorData.attribution_successful) {
+        return (
+            <div className="error">
+                Factor attribution failed: {factorData?.error || 'Unknown error'}
+            </div>
+        );
+    }
+
+    const factorInterpretations = factorData.factor_interpretations || [];
+
+    return (
+        <div>
+            <div className="card">
+                <div className="card-header">
+                    Factor Attribution Analysis
+                    <span style={{fontSize: '0.9rem', opacity: '0.8'}}>
+                        {factorData.num_factors_analyzed} factors analyzed
+                    </span>
+                </div>
+                <div className="card-content">
+                    {factorInterpretations.map((factor, index) => (
+                        <div key={index} className="factor-card">
+                            <div className="factor-header">
+                                <div className="factor-name">{factor.factor_name}</div>
+                                <div className={`factor-type-badge factor-type-${factor.factor_type}`}>
+                                    {factor.factor_type}
+                                </div>
+                            </div>
+                            <div className="factor-details">
+                                <div className="factor-variance">
+                                    {(factor.variance_explained * 100).toFixed(1)}% of portfolio variance
+                                </div>
+                                <div className="factor-description">
+                                    {factor.description}
+                                </div>
+                            </div>
+                            {factor.top_loadings && factor.top_loadings.length > 0 && (
+                                <div className="factor-loadings">
+                                    <h4>Top Stock Exposures:</h4>
+                                    {factor.top_loadings.slice(0, 3).map(([ticker, loading], idx) => (
+                                        <div key={idx} className="loading-item">
+                                            <span className="loading-ticker">{ticker}</span>
+                                            <span className="loading-value">{loading.toFixed(3)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
             const renderComprehensiveResults = () => {
                 if (!results) return null;
 
-                const correlationData = results.correlation_analysis;
+                const correlationData = results.correlation_analysis || results;
                 const tailRiskData = results.tail_risk_analysis;
 
                 return (
@@ -688,9 +839,11 @@
                     return renderComprehensiveResults();
                 } else if (analysisType === 'correlation') {
                     return renderCorrelationResults(results);
-                } else {
+                } else if (analysisType === 'tail-risk') {
                     return renderTailRiskResults(results);
-                }
+                } else if (analysisType === 'factor-attribution') {
+                    return renderFactorAttributionResults(results.factor_attribution || results);
+    }
             };
 
             return (
@@ -718,6 +871,12 @@
                             onClick={() => setAnalysisType('tail-risk')}
                         >
                             Tail Risk Only
+                        </button>
+                        <button 
+                            className={`analysis-type-btn ${analysisType === 'factor-attribution' ? 'active' : ''}`}
+                            onClick={() => setAnalysisType('factor-attribution')}
+                        >
+                            Factor Attribution
                         </button>
                     </div>
 
@@ -786,8 +945,12 @@
                             {activeTab === 'sample' && (
                                 <div>
                                     <p style={{marginBottom: '16px', color: '#6b7280'}}>
-                                        Analyze a sample tech portfolio with {analysisType === 'comprehensive' ? 'full risk assessment' : 
-                                        analysisType === 'correlation' ? 'correlation analysis' : 'tail risk metrics'}
+                                        Analyze a sample tech portfolio with {
+                                            analysisType === 'comprehensive' ? 'full risk assessment' : 
+                                            analysisType === 'correlation' ? 'correlation analysis' : 
+                                            analysisType === 'tail-risk' ? 'tail risk metrics' :
+                                            'factor attribution analysis'
+                                        }
                                     </p>
                                     <button 
                                         className="btn btn-primary" 
