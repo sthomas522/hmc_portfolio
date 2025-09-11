@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Optimization & Analysis</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+        
+        .main-nav {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 32px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            padding: 12px 24px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .nav-btn.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .nav-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .card-content {
+            padding: 24px;
+        }
+        
+        .input-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .input-group label {
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .input-field, .select-field {
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus, .select-field:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: fit-content;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        .optimization-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .method-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .method-option:hover {
+            border-color: #4f46e5;
+            background: #f8fafc;
+        }
+        
+        .method-option.selected {
+            border-color: #4f46e5;
+            background: #f0f9ff;
+        }
+        
+        .method-option input[type="checkbox"] {
+            margin: 0;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .optimization-result {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+        
+        .result-sharpe {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #0ea5e9;
+        }
+        
+        .result-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+        
+        .metric-label {
+            font-size: 0.85rem;
+            color: #075985;
+        }
+        
+        .weights-display {
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .weight-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #e0f2fe;
+        }
+        
+        .weight-ticker {
+            font-weight: 600;
+            color: #0c4a6e;
+        }
+        
+        .weight-value {
+            color: #075985;
+            font-family: monospace;
+        }
+        
+        .recommended-badge {
+            background: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .comparison-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .comparison-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .efficient-frontier-container {
+            position: relative;
+            height: 400px;
+            margin: 20px 0;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            color: #dc2626;
+            margin: 16px 0;
+        }
+        
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            color: #166534;
+            margin: 16px 0;
+        }
+        
+        .insights-section {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        
+        .insights-title {
+            color: #1e40af;
+            margin-bottom: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .insight-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+            line-height: 1.6;
+            color: #1e40af;
+        }
+        
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+        
+        .backtest-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .backtest-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .backtest-strategy {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 12px;
+        }
+        
+        .backtest-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .backtest-metric {
+            text-align: center;
+        }
+        
+        .backtest-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #78350f;
+        }
+        
+        .backtest-label {
+            font-size: 0.8rem;
+            color: #92400e;
+        }
+        
+        @media (max-width: 768px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .optimization-methods {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .main-nav {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_BASE = 'http://localhost:8000';
+
+        function PortfolioOptimizationApp() {
+            const [activeTab, setActiveTab] = useState('optimize');
+            const [tickers, setTickers] = useState('AAPL,MSFT,GOOGL,AMZN,NVDA,TSLA');
+            const [optimizationMethod, setOptimizationMethod] = useState('max_sharpe');
+            const [selectedMethods, setSelectedMethods] = useState(['max_sharpe', 'min_variance', 'risk_parity']);
+            const [maxWeight, setMaxWeight] = useState(0.25);
+            const [loading, setLoading] = useState(false);
+            const [results, setResults] = useState(null);
+            const [error, setError] = useState(null);
+            const [integratedResults, setIntegratedResults] = useState(null);
+
+            const optimizationMethods = [
+                { value: 'max_sharpe', label: 'Maximum Sharpe Ratio', description: 'Optimize risk-adjusted returns' },
+                { value: 'min_variance', label: 'Minimum Variance', description: 'Minimize portfolio risk' },
+                { value: 'risk_parity', label: 'Risk Parity', description: 'Equal risk contribution' },
+                { value: 'mean_variance', label: 'Mean-Variance', description: 'Balance return and risk' }
+            ];
+
+            const handleOptimize = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const tickerList = tickers.split(',').map(t => t.trim()).filter(t => t);
+                    
+                    const response = await fetch(`${API_BASE}/optimize/portfolio`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            tickers: tickerList,
+                            method: optimizationMethod,
+                            max_weight: maxWeight,
+                            min_weight: 0.01
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    setResults(data);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleCompareStrategies = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const tickerList = tickers.split(',').map(t => t.trim()).filter(t => t);
+                    
+                    const queryParams = new URLSearchParams({
+                        period: '1y',
+                        max_weight: maxWeight
+                    });
+                    
+                    selectedMethods.forEach(method => {
+                        queryParams.append('strategies', method);
+                    });
+                    
+                    tickerList.forEach(ticker => {
+                        queryParams.append('tickers', ticker);
+                    });
+                    
+                    const response = await fetch(`${API_BASE}/optimize/compare-strategies?${queryParams}`, {
+                        method: 'POST'
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    setResults(data);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleIntegratedAnalysis = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const tickerList = tickers.split(',').map(t => t.trim()).filter(t => t);
+                    
+                    const response = await fetch(`${API_BASE}/analyze/integrated`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            tickers: tickerList,
+                            optimization_methods: selectedMethods,
+                            include_backtesting: true,
+                            max_weight: maxWeight,
+                            min_weight: 0.01
+                        })
+                    });
+                    
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    setIntegratedResults(data);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleMethodToggle = (method) => {
+                if (selectedMethods.includes(method)) {
+                    setSelectedMethods(selectedMethods.filter(m => m !== method));
+                } else {
+                    setSelectedMethods([...selectedMethods, method]);
+                }
+            };
+
+            const renderOptimizationTab = () => (
+                <div>
+                    <div className="card">
+                        <div className="card-header">
+                            Single Strategy Optimization
+                        </div>
+                        <div className="card-content">
+                            <div className="input-grid">
+                                <div className="input-group">
+                                    <label htmlFor="tickers">Stock Tickers (comma-separated)</label>
+                                    <input
+                                        id="tickers"
+                                        type="text"
+                                        className="input-field"
+                                        value={tickers}
+                                        onChange={(e) => setTickers(e.target.value)}
+                                        placeholder="AAPL,MSFT,GOOGL,AMZN,NVDA"
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label htmlFor="method">Optimization Method</label>
+                                    <select
+                                        id="method"
+                                        className="select-field"
+                                        value={optimizationMethod}
+                                        onChange={(e) => setOptimizationMethod(e.target.value)}
+                                    >
+                                        {optimizationMethods.map(method => (
+                                            <option key={method.value} value={method.value}>
+                                                {method.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleOptimize}
+                                    disabled={loading}
+                                >
+                                    Optimize
+                                </button>
+                            </div>
+                            
+                            <div className="input-group">
+                                <label htmlFor="maxWeight">Maximum Asset Weight: {(maxWeight * 100).toFixed(0)}%</label>
+                                <input
+                                    id="maxWeight"
+                                    type="range"
+                                    min="0.05"
+                                    max="0.5"
+                                    step="0.05"
+                                    value={maxWeight}
+                                    onChange={(e) => setMaxWeight(parseFloat(e.target.value))}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {results && results.success && (
+                        <div className="card">
+                            <div className="card-header">
+                                Optimization Results - {results.optimization_method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </div>
+                            <div className="card-content">
+                                <div className="optimization-result">
+                                    <div className="result-header">
+                                        <div className="result-title">Optimized Portfolio</div>
+                                        <div className="result-sharpe">{results.sharpe_ratio.toFixed(3)}</div>
+                                    </div>
+                                    
+                                    <div className="result-metrics">
+                                        <div className="metric">
+                                            <div className="metric-value">{(results.expected_return * 100).toFixed(1)}%</div>
+                                            <div className="metric-label">Expected Return</div>
+                                        </div>
+                                        <div className="metric">
+                                            <div className="metric-value">{(results.expected_risk * 100).toFixed(1)}%</div>
+                                            <div className="metric-label">Expected Risk</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="weights-display">
+                                        <h4 style={{marginBottom: '8px', color: '#0c4a6e'}}>Portfolio Weights:</h4>
+                                        {Object.entries(results.weights)
+                                            .sort(([,a], [,b]) => b - a)
+                                            .map(([ticker, weight]) => (
+                                            <div key={ticker} className="weight-item">
+                                                <span className="weight-ticker">{ticker}</span>
+                                                <span className="weight-value">{(weight * 100).toFixed(1)}%</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const renderComparisonTab = () => (
+                <div>
+                    <div className="card">
+                        <div className="card-header">
+                            Strategy Comparison
+                        </div>
+                        <div className="card-content">
+                            <div className="input-grid">
+                                <div className="input-group">
+                                    <label htmlFor="tickers">Stock Tickers (comma-separated)</label>
+                                    <input
+                                        id="tickers"
+                                        type="text"
+                                        className="input-field"
+                                        value={tickers}
+                                        onChange={(e) => setTickers(e.target.value)}
+                                        placeholder="AAPL,MSFT,GOOGL,AMZN,NVDA"
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label htmlFor="maxWeight">Max Weight: {(maxWeight * 100).toFixed(0)}%</label>
+                                    <input
+                                        id="maxWeight"
+                                        type="range"
+                                        min="0.05"
+                                        max="0.5"
+                                        step="0.05"
+                                        value={maxWeight}
+                                        onChange={(e) => setMaxWeight(parseFloat(e.target.value))}
+                                    />
+                                </div>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleCompareStrategies}
+                                    disabled={loading || selectedMethods.length === 0}
+                                >
+                                    Compare Strategies
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <label style={{marginBottom: '12px', display: 'block', fontWeight: '500'}}>
+                                    Select Optimization Methods:
+                                </label>
+                                <div className="optimization-methods">
+                                    {optimizationMethods.map(method => (
+                                        <div 
+                                            key={method.value} 
+                                            className={`method-option ${selectedMethods.includes(method.value) ? 'selected' : ''}`}
+                                            onClick={() => handleMethodToggle(method.value)}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedMethods.includes(method.value)}
+                                                onChange={() => handleMethodToggle(method.value)}
+                                            />
+                                            <div>
+                                                <div style={{fontWeight: '600'}}>{method.label}</div>
+                                                <div style={{fontSize: '0.85rem', color: '#6b7280'}}>{method.description}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {results && results.comparison_data && (
+                        <div className="card">
+                            <div className="card-header">
+                                Strategy Comparison Results
+                            </div>
+                            <div className="card-content">
+                                {results.summary && (
+                                    <div className="success">
+                                        <strong>Best Performers:</strong><br/>
+                                        • Highest Sharpe: {results.summary.best_sharpe_strategy} ({results.summary.best_sharpe_ratio?.toFixed(3)})<br/>
+                                        • Highest Return: {results.summary.best_return_strategy} ({(results.summary.best_return * 100)?.toFixed(1)}%)<br/>
+                                        • Lowest Risk: {results.summary.lowest_risk_strategy} ({(results.summary.lowest_risk * 100)?.toFixed(1)}%)
+                                    </div>
+                                )}
+                                
+                                <table className="comparison-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Strategy</th>
+                                            <th>Return</th>
+                                            <th>Risk</th>
+                                            <th>Sharpe</th>
+                                            <th>Max Weight</th>
+                                            <th>Holdings</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {results.comparison_data
+                                            .filter(strategy => strategy.success)
+                                            .sort((a, b) => (b.sharpe_ratio || 0) - (a.sharpe_ratio || 0))
+                                            .map((strategy, index) => (
+                                            <tr key={strategy.strategy}>
+                                                <td>
+                                                    {strategy.strategy}
+                                                    {index === 0 && <span className="recommended-badge" style={{marginLeft: '8px'}}>Best</span>}
+                                                </td>
+                                                <td>{(strategy.expected_return * 100).toFixed(1)}%</td>
+                                                <td>{(strategy.expected_risk * 100).toFixed(1)}%</td>
+                                                <td>{strategy.sharpe_ratio?.toFixed(3)}</td>
+                                                <td>{(strategy.max_weight * 100).toFixed(1)}%</td>
+                                                <td>{strategy.num_holdings}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const renderIntegratedTab = () => (
+                <div>
+                    <div className="card">
+                        <div className="card-header">
+                            Integrated Risk & Optimization Analysis
+                            <span style={{fontSize: '0.9rem', opacity: '0.8'}}>
+                                Complete portfolio assessment with backtesting
+                            </span>
+                        </div>
+                        <div className="card-content">
+                            <div className="input-grid">
+                                <div className="input-group">
+                                    <label htmlFor="tickers">Stock Tickers (comma-separated)</label>
+                                    <input
+                                        id="tickers"
+                                        type="text"
+                                        className="input-field"
+                                        value={tickers}
+                                        onChange={(e) => setTickers(e.target.value)}
+                                        placeholder="AAPL,MSFT,GOOGL,AMZN,NVDA"
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label htmlFor="maxWeight">Max Weight: {(maxWeight * 100).toFixed(0)}%</label>
+                                    <input
+                                        id="maxWeight"
+                                        type="range"
+                                        min="0.05"
+                                        max="0.5"
+                                        step="0.05"
+                                        value={maxWeight}
+                                        onChange={(e) => setMaxWeight(parseFloat(e.target.value))}
+                                    />
+                                </div>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleIntegratedAnalysis}
+                                    disabled={loading}
+                                >
+                                    Analyze & Optimize
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <label style={{marginBottom: '12px', display: 'block', fontWeight: '500'}}>
+                                    Optimization Methods to Test:
+                                </label>
+                                <div className="optimization-methods">
+                                    {optimizationMethods.slice(0, 3).map(method => (
+                                        <div 
+                                            key={method.value} 
+                                            className={`method-option ${selectedMethods.includes(method.value) ? 'selected' : ''}`}
+                                            onClick={() => handleMethodToggle(method.value)}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedMethods.includes(method.value)}
+                                                onChange={() => handleMethodToggle(method.value)}
+                                            />
+                                            <div>
+                                                <div style={{fontWeight: '600'}}>{method.label}</div>
+                                                <div style={{fontSize: '0.85rem', color: '#6b7280'}}>{method.description}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {integratedResults && integratedResults.analysis_successful && (
+                        <div>
+                            {/* Recommended Portfolio */}
+                            {integratedResults.recommended_portfolio.success && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        Recommended Portfolio - {integratedResults.recommended_portfolio.method?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                    </div>
+                                    <div className="card-content">
+                                        <div className="optimization-result">
+                                            <div className="result-header">
+                                                <div className="result-title">Optimal Strategy</div>
+                                                <div className="recommended-badge">RECOMMENDED</div>
+                                                <div className="result-sharpe">{integratedResults.recommended_portfolio.sharpe_ratio?.toFixed(3)}</div>
+                                            </div>
+                                            
+                                            <div className="result-metrics">
+                                                <div className="metric">
+                                                    <div className="metric-value">{(integratedResults.recommended_portfolio.expected_return * 100).toFixed(1)}%</div>
+                                                    <div className="metric-label">Expected Return</div>
+                                                </div>
+                                                <div className="metric">
+                                                    <div className="metric-value">{(integratedResults.recommended_portfolio.expected_risk * 100).toFixed(1)}%</div>
+                                                    <div className="metric-label">Expected Risk</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="weights-display">
+                                                <h4 style={{marginBottom: '8px', color: '#0c4a6e'}}>Portfolio Weights:</h4>
+                                                {Object.entries(integratedResults.recommended_portfolio.weights)
+                                                    .sort(([,a], [,b]) => b - a)
+                                                    .map(([ticker, weight]) => (
+                                                    <div key={ticker} className="weight-item">
+                                                        <span className="weight-ticker">{ticker}</span>
+                                                        <span className="weight-value">{(weight * 100).toFixed(1)}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Key Insights */}
+                            {integratedResults.insights && integratedResults.insights.length > 0 && (
+                                <div className="card">
+                                    <div className="card-content">
+                                        <div className="insights-section">
+                                            <div className="insights-title">Key Analysis Insights</div>
+                                            {integratedResults.insights.map((insight, index) => (
+                                                <div key={index} className="insight-item">{insight}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Optimization Comparison */}
+                            {integratedResults.optimization_results && Object.keys(integratedResults.optimization_results).length > 0 && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        Optimization Results Comparison
+                                    </div>
+                                    <div className="card-content">
+                                        <div className="results-grid">
+                                            {Object.entries(integratedResults.optimization_results)
+                                                .filter(([, result]) => result.success)
+                                                .sort(([,a], [,b]) => (b.sharpe_ratio || 0) - (a.sharpe_ratio || 0))
+                                                .map(([method, result]) => (
+                                                <div key={method} className="optimization-result">
+                                                    <div className="result-header">
+                                                        <div className="result-title">{method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                                        <div className="result-sharpe">{result.sharpe_ratio?.toFixed(3)}</div>
+                                                    </div>
+                                                    
+                                                    <div className="result-metrics">
+                                                        <div className="metric">
+                                                            <div className="metric-value">{(result.expected_return * 100).toFixed(1)}%</div>
+                                                            <div className="metric-label">Return</div>
+                                                        </div>
+                                                        <div className="metric">
+                                                            <div className="metric-value">{(result.expected_risk * 100).toFixed(1)}%</div>
+                                                            <div className="metric-label">Risk</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Backtesting Results */}
+                            {integratedResults.backtesting_results && Object.keys(integratedResults.backtesting_results).length > 0 && (
+                                <div className="card">
+                                    <div className="card-header">
+                                        Historical Backtesting Performance
+                                    </div>
+                                    <div className="card-content">
+                                        <div className="backtest-results">
+                                            {Object.entries(integratedResults.backtesting_results)
+                                                .filter(([, result]) => result.success)
+                                                .sort(([,a], [,b]) => (b.sharpe_ratio || 0) - (a.sharpe_ratio || 0))
+                                                .map(([method, result]) => (
+                                                <div key={method} className="backtest-card">
+                                                    <div className="backtest-strategy">{method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                                                    <div className="backtest-metrics">
+                                                        <div className="backtest-metric">
+                                                            <div className="backtest-value">{(result.annualized_return * 100).toFixed(1)}%</div>
+                                                            <div className="backtest-label">Annual Return</div>
+                                                        </div>
+                                                        <div className="backtest-metric">
+                                                            <div className="backtest-value">{result.sharpe_ratio?.toFixed(3)}</div>
+                                                            <div className="backtest-label">Sharpe Ratio</div>
+                                                        </div>
+                                                        <div className="backtest-metric">
+                                                            <div className="backtest-value">{(Math.abs(result.max_drawdown) * 100).toFixed(1)}%</div>
+                                                            <div className="backtest-label">Max Drawdown</div>
+                                                        </div>
+                                                        <div className="backtest-metric">
+                                                            <div className="backtest-value">{(result.win_rate * 100).toFixed(0)}%</div>
+                                                            <div className="backtest-label">Win Rate</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Advisor Recommendations */}
+                            {integratedResults.advisor_recommendations && integratedResults.advisor_recommendations.length > 0 && (
+                                <div className="card">
+                                    <div className="card-content">
+                                        <div className="insights-section" style={{background: 'linear-gradient(135deg, #fef7cd 0%, #fef3c7 100%)', borderLeftColor: '#f59e0b'}}>
+                                            <div className="insights-title" style={{color: '#92400e'}}>💡 Advisor Recommendations</div>
+                                            {integratedResults.advisor_recommendations.map((rec, index) => (
+                                                <div key={index} className="insight-item" style={{color: '#78350f'}}>{rec}</div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>Portfolio Optimization & Analysis</h1>
+                        <p>Advanced portfolio construction with risk assessment, optimization, and backtesting</p>
+                    </div>
+
+                    <div className="main-nav">
+                        <button 
+                            className={`nav-btn ${activeTab === 'optimize' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('optimize')}
+                        >
+                            Single Optimization
+                        </button>
+                        <button 
+                            className={`nav-btn ${activeTab === 'compare' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('compare')}
+                        >
+                            Strategy Comparison
+                        </button>
+                        <button 
+                            className={`nav-btn ${activeTab === 'integrated' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('integrated')}
+                        >
+                            Integrated Analysis
+                        </button>
+                    </div>
+
+                    {error && (
+                        <div className="error">
+                            <strong>Error:</strong> {error}
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="card">
+                            <div className="loading">
+                                <div className="spinner"></div>
+                                <span>Running {activeTab === 'integrated' ? 'integrated analysis' : 'optimization'}...</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'optimize' && renderOptimizationTab()}
+                    {activeTab === 'compare' && renderComparisonTab()}
+                    {activeTab === 'integrated' && renderIntegratedTab()}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<PortfolioOptimizationApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>

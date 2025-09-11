@@ -25,6 +25,8 @@ sys.path.insert(0, project_root)
 from analysis.portfolio_analyzer import EnhancedPortfolioAnalyzer, analyze_comprehensive_portfolio_risk
 from analysis.tail_risk_analysis import TailRiskAnalyzer
 from data.data_service import DataService, load_sample_portfolio_data
+from optimization_api_endpoints import add_optimization_endpoints
+from analysis.portfolio_analyzer import PortfolioCorrelationAnalyzer
 from config import get_settings
 
 # Pydantic models for enhanced request/response
@@ -63,6 +65,47 @@ class AnalysisRequest(BaseModel):
     max_assets: Optional[int] = None
     include_factor_attribution: Optional[bool] = False  # Add this line
 
+class OptimizationRequest(BaseModel):
+    tickers: List[str]
+    method: str = "max_sharpe"
+    period: str = "1y"
+    min_weight: float = 0.0
+    max_weight: float = 0.3
+    max_concentration: Optional[float] = None
+    target_return: Optional[float] = None
+    target_risk: Optional[float] = None
+    risk_free_rate: float = 0.02
+    risk_aversion: Optional[float] = None
+    current_weights: Optional[List[float]] = None
+
+class BacktestRequest(BaseModel):
+    tickers: List[str]
+    strategies: List[str] = ["max_sharpe", "min_variance", "risk_parity", "equal_weight"]
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    rebalance_frequency: str = "M"
+    transaction_cost: float = 0.001
+    initial_capital: float = 1000000.0
+    max_weight: float = 0.2
+
+class IntegratedAnalysisRequest(BaseModel):
+    tickers: List[str]
+    period: str = "1y"
+    optimization_methods: Optional[List[str]] = ["max_sharpe", "min_variance", "risk_parity"]
+    include_backtesting: bool = True
+    backtest_start_date: Optional[str] = None
+    min_weight: float = 0.01
+    max_weight: float = 0.3
+    current_weights: Optional[List[float]] = None
+
+class EfficientFrontierRequest(BaseModel):
+    tickers: List[str]
+    period: str = "1y"
+    num_points: int = 25
+    min_weight: float = 0.0
+    max_weight: float = 0.3
+    risk_free_rate: float = 0.02
+
 # Initialize enhanced services
 app = FastAPI(
     title="Enhanced Portfolio Risk Analysis API",
@@ -82,6 +125,9 @@ settings = get_settings()
 enhanced_analyzer = EnhancedPortfolioAnalyzer()
 tail_risk_analyzer = TailRiskAnalyzer()
 data_service = DataService()
+
+# add portfolio optimization
+app = add_optimization_endpoints(app, data_service)
 
 # Enhanced analysis endpoints
 @app.post("/analyze/comprehensive")
@@ -209,7 +255,6 @@ async def analyze_ticker_portfolio(request: AnalysisRequest):
         print("DEBUG: About to run analysis...")
         
         # Use the unified analyzer with factor attribution support
-        from analysis.portfolio_analyzer import PortfolioCorrelationAnalyzer
         analyzer = PortfolioCorrelationAnalyzer()
         
         results = analyzer.analyze_portfolio_returns(
