@@ -27,6 +27,7 @@ from analysis.tail_risk_analysis import TailRiskAnalyzer
 from data.data_service import DataService, load_sample_portfolio_data
 from optimization_api_endpoints import add_optimization_endpoints
 from analysis.portfolio_analyzer import PortfolioCorrelationAnalyzer
+from monte_carlo_api_integration import add_monte_carlo_endpoints
 from config import get_settings
 
 # Pydantic models for enhanced request/response
@@ -128,6 +129,7 @@ data_service = DataService()
 
 # add portfolio optimization
 app = add_optimization_endpoints(app, data_service)
+app = add_monte_carlo_endpoints(app, data_service)
 
 # Enhanced analysis endpoints
 @app.post("/analyze/comprehensive")

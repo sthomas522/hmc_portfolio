@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Monte Carlo Simulation</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .disclaimer {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 32px;
+            color: white;
+            text-align: center;
+        }
+        
+        .disclaimer-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #ffd700;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .card-content {
+            padding: 24px;
+        }
+        
+        .input-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .input-field {
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            height: fit-content;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #0ea5e9;
+            margin-bottom: 16px;
+        }
+        
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 8px;
+        }
+        
+        .result-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #0ea5e9;
+            margin-bottom: 8px;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            color: #dc2626;
+            margin: 16px 0;
+        }
+        
+        .warning {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        
+        .warning-title {
+            font-weight: 600;
+            color: #92400e;
+        }
+        
+        @media (max-width: 768px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+        const API_BASE = 'http://localhost:8000';
+
+        function MonteCarloApp() {
+            const [tickers, setTickers] = useState('AAPL,MSFT,GOOGL,AMZN,NVDA');
+            const [timeHorizon, setTimeHorizon] = useState(10);
+            const [initialValue, setInitialValue] = useState(100000);
+            const [loading, setLoading] = useState(false);
+            const [results, setResults] = useState(null);
+            const [error, setError] = useState(null);
+
+            const handleQuickForecast = async () => {
+                setLoading(true);
+                setError(null);
+                
+                try {
+                    const tickerList = tickers.split(',').map(t => t.trim()).filter(t => t);
+                    
+                    const response = await fetch(`${API_BASE}/simulate/monte-carlo`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            tickers: tickerList,
+                            time_horizon_years: timeHorizon,
+                            initial_portfolio_value: initialValue,
+                            num_simulations: 5000,
+                            simulation_methods: ['parametric']
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.simulation_successful) {
+                        setResults(data);
+                    } else {
+                        setError(data.error || 'Simulation failed');
+                    }
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>Monte Carlo Portfolio Simulation</h1>
+                        <p>Scenario analysis for long-term portfolio planning</p>
+                    </div>
+
+                    <div className="disclaimer">
+                        <div className="disclaimer-title">Important Disclaimer</div>
+                        <div>These projections are scenario analyses, not predictions. Use for planning purposes only.</div>
+                    </div>
+
+                    <div className="card">
+                        <div className="card-header">Monte Carlo Simulation</div>
+                        <div className="card-content">
+                            <div className="input-grid">
+                                <div className="input-group">
+                                    <label>Stock Tickers (comma-separated)</label>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={tickers}
+                                        onChange={(e) => setTickers(e.target.value)}
+                                        placeholder="AAPL,MSFT,GOOGL"
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Years</label>
+                                    <input
+                                        type="number"
+                                        className="input-field"
+                                        value={timeHorizon}
+                                        onChange={(e) => setTimeHorizon(parseInt(e.target.value))}
+                                        min="1"
+                                        max="30"
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Initial Value ($)</label>
+                                    <input
+                                        type="number"
+                                        className="input-field"
+                                        value={initialValue}
+                                        onChange={(e) => setInitialValue(parseFloat(e.target.value))}
+                                        step="1000"
+                                    />
+                                </div>
+                                <button 
+                                    className="btn btn-primary" 
+                                    onClick={handleQuickForecast}
+                                    disabled={loading}
+                                >
+                                    Run Simulation
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="error">
+                            <strong>Error:</strong> {error}
+                        </div>
+                    )}
+
+                    {loading && (
+                        <div className="card">
+                            <div className="loading">
+                                <div className="spinner"></div>
+                                <span>Running Monte Carlo simulation...</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {results && results.simulation_successful && (
+                        <div>
+                            <div className="warning">
+                                <div className="warning-title">Scenario Planning Only</div>
+                                <div>These are projections based on historical patterns. Actual results may vary significantly.</div>
+                            </div>
+
+                            {results.executive_summary && (
+                                <div className="card">
+                                    <div className="card-header">Simulation Results</div>
+                                    <div className="card-content">
+                                        <div className="result-card">
+                                            <div className="result-title">Expected Outcome ({timeHorizon} years)</div>
+                                            <div className="result-value">{results.executive_summary.median_outcome_nominal}</div>
+                                            <div>Inflation-adjusted: {results.executive_summary.median_outcome_real}</div>
+                                        </div>
+                                        
+                                        <div className="result-card">
+                                            <div className="result-title">Uncertainty Range (80%)</div>
+                                            <div className="result-value">{results.executive_summary.range_80_percent}</div>
+                                            <div>Most likely range of outcomes</div>
+                                        </div>
+                                        
+                                        <div className="result-card">
+                                            <div className="result-title">Downside Risk</div>
+                                            <div className="result-value">{results.executive_summary.probability_of_loss}</div>
+                                            <div>Probability of nominal loss</div>
+                                            <div>Real loss risk: {results.executive_summary.probability_of_real_loss}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {results.key_insights && results.key_insights.length > 0 && (
+                                <div className="card">
+                                    <div className="card-header">Key Insights</div>
+                                    <div className="card-content">
+                                        {results.key_insights.map((insight, index) => (
+                                            <div key={index} style={{marginBottom: '12px', padding: '12px', background: '#f8fafc', borderRadius: '6px'}}>
+                                                {insight}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {results.recommendations && results.recommendations.length > 0 && (
+                                <div className="card">
+                                    <div className="card-header">Recommendations</div>
+                                    <div className="card-content">
+                                        {results.recommendations.map((rec, index) => (
+                                            <div key={index} style={{marginBottom: '12px', padding: '12px', background: '#fef7cd', borderRadius: '6px'}}>
+                                                {rec}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(React.createElement(MonteCarloApp), document.getElementById('root'));
+    </script>
+</body>
+</html>
